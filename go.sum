@@ -2,5 +2,9 @@ github.com/rannday/go-build-bin v0.1.4 h1:9TEYOj94H3XXgIArFHUNZXS7rzHbyY0pXDY2hy
 github.com/rannday/go-build-bin v0.1.4/go.mod h1:4nsNwQday/dtM7s7j/1idxNqzPiC9oMLKuo0fVtEwMs=
 github.com/rannday/go-env v0.1.0 h1:7y2a7ttV6aD+4Wna+C+zqftwJt04dwsFCIK9nieaAP4=
 github.com/rannday/go-env v0.1.0/go.mod h1:8HGm1nXutcxiLasJ8TEyXynb4GvPTwqygpOEbrlfH5k=
-github.com/rannday/go-github-releases v0.1.2 h1:KiJG7q6TWJw8g/wBKMC2D7kHq287PK8NV4DeXEmoi7w=
-github.com/rannday/go-github-releases v0.1.2/go.mod h1:RCJw8qqIWLSCpMeFSjD/sRDv9vKigd4fCSIvi5ZKkk0=
+github.com/rannday/go-github-releases v0.1.3 h1:KC0e036010/ykfziDqSZeM4G4SQG8e7ycepw7AaNx+0=
+github.com/rannday/go-github-releases v0.1.3/go.mod h1:RCJw8qqIWLSCpMeFSjD/sRDv9vKigd4fCSIvi5ZKkk0=
+github.com/rannday/go-github-releases v0.1.4 h1:xp7JW9Dnc1aXtuuhLHODBalaXIBH1UOCQS90Gm1Oc48=
+github.com/rannday/go-github-releases v0.1.4/go.mod h1:RCJw8qqIWLSCpMeFSjD/sRDv9vKigd4fCSIvi5ZKkk0=
+github.com/rannday/go-github-releases v0.1.5 h1:VNfPRfiCTBP2xiZEi5HJ31zGywcfJyXzX1QL5ZJeB8Q=
+github.com/rannday/go-github-releases v0.1.5/go.mod h1:RCJw8qqIWLSCpMeFSjD/sRDv9vKigd4fCSIvi5ZKkk0=

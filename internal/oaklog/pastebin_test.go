@@ -95,7 +95,7 @@ func TestPastebinUploadMissingAPIKey(t *testing.T) {
 
 	c := PastebinClient{Endpoint: "http://example.invalid/api_post.php", HTTPClient: client}
 	_, err := c.Upload(context.Background(), UploadRequest{Content: []byte("abc"), Source: "oaklog"})
-	if err == nil || !strings.Contains(err.Error(), "PASTEBIN_API is required when using --pastebin") {
+	if err == nil || !strings.Contains(err.Error(), "PASTEBIN_API is required when using oaklog pastebin") {
 		t.Fatalf("expected missing API key error, got %v", err)
 	}
 }

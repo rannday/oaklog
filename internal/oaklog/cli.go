@@ -56,6 +56,7 @@ type cliOptions struct {
 	JSON            bool
 	LogPath         string
 	PastebinAPI     string
+	PastebinAPIFile string
 	PastebinPrivate string
 }
 
@@ -70,7 +71,7 @@ func run(ctx context.Context, args []string, stdin io.Reader, stdout, stderr io.
 	}
 
 	if opts.Provider == ProviderPastebin {
-		apiKey, err := loadPastebinAPIKey()
+		apiKey, err := resolvePastebinAPIKey(opts)
 		if err != nil {
 			return err
 		}
@@ -200,6 +201,8 @@ func parseProviderCommand(provider Provider, args []string, stdout io.Writer) (c
 	var source string
 	var timeout string
 	var jsonOut bool
+	var pastebinAPI string
+	var pastebinAPIFile string
 	var pastebinPublic bool
 	var pastebinUnlisted bool
 
@@ -207,6 +210,8 @@ func parseProviderCommand(provider Provider, args []string, stdout io.Writer) (c
 	fs.StringVar(&timeout, "timeout", "30s", "HTTP timeout")
 	fs.BoolVar(&jsonOut, "json", false, "print machine-readable JSON output")
 	if provider == ProviderPastebin {
+		fs.StringVar(&pastebinAPI, "pastebin-api", "", "Pastebin API token")
+		fs.StringVar(&pastebinAPIFile, "pastebin-api-file", "", "path to a file containing only the Pastebin API token")
 		fs.BoolVar(&pastebinPublic, "public", false, "create a public paste")
 		fs.BoolVar(&pastebinUnlisted, "unlisted", false, "create an unlisted paste")
 	}
@@ -247,6 +252,8 @@ func parseProviderCommand(provider Provider, args []string, stdout io.Writer) (c
 		Timeout:         timeoutDur,
 		JSON:            jsonOut,
 		LogPath:         fs.Arg(0),
+		PastebinAPI:     pastebinAPI,
+		PastebinAPIFile: pastebinAPIFile,
 		PastebinPrivate: pastebinPrivate,
 	}, false, nil
 }
@@ -296,6 +303,8 @@ func printPastebinHelp(w io.Writer) {
 	fmt.Fprintln(w, "  -s, --source string      paste title/source label (default \"oaklog\")")
 	fmt.Fprintln(w, "  -t, --timeout duration   HTTP timeout (default 30s)")
 	fmt.Fprintln(w, "  -j, --json               print machine-readable JSON output")
+	fmt.Fprintln(w, "      --pastebin-api       Pastebin API token")
+	fmt.Fprintln(w, "      --pastebin-api-file  path to a file containing only the Pastebin API token")
 	fmt.Fprintln(w, "      --public             create a public paste (default)")
 	fmt.Fprintln(w, "      --unlisted           create an unlisted paste")
 	fmt.Fprintln(w, "  -h, --help               print help")

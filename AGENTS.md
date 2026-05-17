@@ -22,6 +22,7 @@ Go:
 - keep tests deterministic
 - do not hit real network in tests
 - use httptest for provider client tests
+- dev-only repo-root `.env` fallback exists only behind `-tags oaklog_dev`; release builds must not include it
 
 Release:
 - use the external `go-build-bin` tool for build, archive, and checksums

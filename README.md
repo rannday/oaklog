@@ -106,21 +106,79 @@ cat latest.log | oaklog pastebin -
 
 ## Config
 
-Pastebin uses repo-root `.env` or process environment.
+Pastebin token resolution precedence:
+
+1. `--pastebin-api`
+2. `--pastebin-api-file`
+3. `PASTEBIN_API`
+4. user config file
+5. system config file, Unix-like only
+
+Examples:
 
 ```bash
-cp .env.example .env
+oaklog pastebin --pastebin-api "$PASTEBIN_API" latest.log
+PASTEBIN_API=... oaklog pastebin latest.log
+oaklog pastebin --pastebin-api-file ~/.config/oaklog/pastebin.token latest.log
 ```
 
-Then set:
+`--pastebin-api-file` expects a raw token file. Whitespace around token is trimmed.
+
+Dotenv config files use `PASTEBIN_API=...`.
+
+Default config paths:
+
+Linux/macOS:
+
+```text
+~/.config/oaklog/env
+/etc/oaklog/env
+```
+
+Windows:
+
+```text
+%USERPROFILE%\.config\oaklog\env
+```
+
+Suggested user config setup on Linux/macOS:
 
 ```bash
-PASTEBIN_API=...
+mkdir -p ~/.config/oaklog
+chmod 700 ~/.config/oaklog
+printf 'PASTEBIN_API=...\n' > ~/.config/oaklog/env
+chmod 600 ~/.config/oaklog/env
 ```
 
-`PASTEBIN_API` is required only for `oaklog pastebin`.
+Suggested system config setup on Linux/macOS:
+
+```bash
+sudo mkdir -p /etc/oaklog
+sudo sh -c 'printf "PASTEBIN_API=...\n" > /etc/oaklog/env'
+sudo chmod 600 /etc/oaklog/env
+```
+
+Suggested user config setup on Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\oaklog"
+"PASTEBIN_API=..." | Set-Content "$env:USERPROFILE\.config\oaklog\env"
+```
+
 Pastebin defaults to public. Use `--unlisted` for unlisted pastes.
 Release uploads use repo-root `.env.github-releases` or `GITHUB_RELEASES_ENV_FILE`.
+
+### Development `.env` fallback
+
+Repo-root `.env` loading is available only in development builds:
+
+```bash
+go run -tags oaklog_dev ./cmd/oaklog pastebin latest.log
+go test -tags oaklog_dev ./...
+go build -tags oaklog_dev ./cmd/oaklog
+```
+
+When built with `oaklog_dev`, Oaklog also checks `.env` in current working directory after normal config files. Normal release/install builds do not include this fallback.
 
 ## Limits
 
@@ -184,7 +242,7 @@ $env:GITHUB_RELEASES_ARTIFACT_DIR="tmp/release"
 `GITHUB_RELEASES_PAT` is required only for non-dry-run `go-github-releases` uploads. The token needs release/content write access to `rannday/oaklog`.
 `.env.github-releases` is ignored already in `.gitignore`, so release config stays local.
 
-`PASTEBIN_API` may be read from repo-root `.env` by `oaklog pastebin`.
+`PASTEBIN_API` may be read from process environment, `--pastebin-api`, `--pastebin-api-file`, or default user/system config files by `oaklog pastebin`.
 
 ## Scope
 

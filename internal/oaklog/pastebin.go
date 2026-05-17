@@ -25,7 +25,7 @@ type PastebinClient struct {
 func (c *PastebinClient) Upload(ctx context.Context, req UploadRequest) (UploadResult, error) {
 	apiKey := strings.TrimSpace(c.APIKey)
 	if apiKey == "" {
-		return UploadResult{}, errors.New("PASTEBIN_API is required when using --pastebin")
+		return UploadResult{}, errors.New(pastebinAPIKeyError)
 	}
 
 	endpoint := c.Endpoint
