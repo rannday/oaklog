@@ -192,10 +192,11 @@ When built with `oaklog_dev`, Oaklog also checks `.env` in current working direc
 Build release archives and checksums:
 
 ```bash
-go tool go-build-bin -v 0.1.0 -c
+go tool go-build-bin -v 0.1.0 -c --version-var github.com/rannday/oaklog/internal/oaklog.Version
 ```
 
 The external build tool creates archives for Windows, Linux, and macOS and writes `checksums.txt`.
+Pass `--version-var github.com/rannday/oaklog/internal/oaklog.Version` so `oaklog -v` and `oaklog --version` report release version instead of `dev`.
 
 Upload draft release:
 
@@ -207,40 +208,28 @@ Recommended flow:
 
 ```bash
 cp .env.example .env
-printf 'GITHUB_RELEASES_PAT=\nGITHUB_RELEASES_REPO=rannday/oaklog\nGITHUB_RELEASES_ARTIFACT_DIR=tmp/release\n' > .env.github-releases
+cp .env.github-releases.example .env.github-releases
 go test ./...
-go tool go-build-bin -v 0.1.0 -c
+go tool go-build-bin -v 0.1.0 -c --version-var github.com/rannday/oaklog/internal/oaklog.Version
 go tool go-github-releases -v 0.1.0 --draft --dry-run
 go tool go-github-releases -v 0.1.0 --draft
 ```
 
-Pin the external tool in `go.mod` with:
-
-```bash
-go get -tool github.com/rannday/go-build-bin/cmd/go-build-bin@latest
-go get -tool github.com/rannday/go-github-releases/cmd/go-github-releases@latest
-```
-
-`go-github-releases` loads `.env.github-releases` automatically from the current directory.
-
 Set these in your shell when you want release uploads without the env file:
 
 ```bash
-export GITHUB_RELEASES_PAT=...
+export GITHUB_TOKEN=...
 export GITHUB_RELEASES_REPO=rannday/oaklog
-export GITHUB_RELEASES_ARTIFACT_DIR=tmp/release
 ```
 
 PowerShell:
 
 ```powershell
-$env:GITHUB_RELEASES_PAT="..."
+$env:GITHUB_TOKEN="..."
 $env:GITHUB_RELEASES_REPO="rannday/oaklog"
-$env:GITHUB_RELEASES_ARTIFACT_DIR="tmp/release"
 ```
 
-`GITHUB_RELEASES_PAT` is required only for non-dry-run `go-github-releases` uploads. The token needs release/content write access to `rannday/oaklog`.
-`.env.github-releases` is ignored already in `.gitignore`, so release config stays local.
+The token needs release/content write access to `rannday/oaklog`.
 
 `PASTEBIN_API` may be read from process environment, `--pastebin-api`, `--pastebin-api-file`, or default user/system config files by `oaklog pastebin`.
 
