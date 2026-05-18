@@ -166,7 +166,6 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\oaklog"
 ```
 
 Pastebin defaults to public. Use `--unlisted` for unlisted pastes.
-Release uploads use repo-root `.env.github-releases` or `GITHUB_RELEASES_ENV_FILE`.
 
 ### Development `.env` fallback
 
@@ -201,35 +200,19 @@ Pass `--version-var github.com/rannday/oaklog/internal/oaklog.Version` so `oaklo
 Upload draft release:
 
 ```bash
-go tool go-github-releases -v 0.1.0 --draft
+gh release create v0.1.0 tmp/release/* --draft --generate-notes --repo rannday/oaklog
 ```
 
 Recommended flow:
 
 ```bash
 cp .env.example .env
-cp .env.github-releases.example .env.github-releases
 go test ./...
 go tool go-build-bin -v 0.1.0 -c --version-var github.com/rannday/oaklog/internal/oaklog.Version
-go tool go-github-releases -v 0.1.0 --draft --dry-run
-go tool go-github-releases -v 0.1.0 --draft
+gh release create v0.1.0 tmp/release/* --draft --generate-notes --repo rannday/oaklog
 ```
 
-Set these in your shell when you want release uploads without the env file:
-
-```bash
-export GITHUB_TOKEN=...
-export GITHUB_RELEASES_REPO=rannday/oaklog
-```
-
-PowerShell:
-
-```powershell
-$env:GITHUB_TOKEN="..."
-$env:GITHUB_RELEASES_REPO="rannday/oaklog"
-```
-
-The token needs release/content write access to `rannday/oaklog`.
+Authenticate GitHub CLI before uploading with `gh auth login`. Keep build and upload separate, and upload release archives/checksums rather than raw binaries.
 
 `PASTEBIN_API` may be read from process environment, `--pastebin-api`, `--pastebin-api-file`, or default user/system config files by `oaklog pastebin`.
 

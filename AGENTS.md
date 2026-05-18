@@ -26,7 +26,7 @@ Go:
 
 Release:
 - use the external `go-build-bin` tool for build, archive, and checksums
-- use the external `go-github-releases` tool for upload
+- use GitHub CLI (`gh release create` / `gh release upload`) for upload
 - keep build and upload separate
 - do not upload raw binaries
 - release archives should contain only the platform binary
