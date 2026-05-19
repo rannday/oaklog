@@ -162,8 +162,8 @@ func TestRunPastebinSubcommand(t *testing.T) {
 		if cfg.PastebinAPI != "test-key" {
 			t.Fatalf("expected API key from env, got %q", cfg.PastebinAPI)
 		}
-		if cfg.PastebinPrivate != pastebinVisibilityPublic {
-			t.Fatalf("expected default public visibility, got %q", cfg.PastebinPrivate)
+		if cfg.PastebinPrivate != pastebinVisibilityUnlisted {
+			t.Fatalf("expected default unlisted visibility, got %q", cfg.PastebinPrivate)
 		}
 		return stubUploader{
 			result: UploadResult{Provider: string(ProviderPastebin), URL: "https://pastebin.com/UIFdu235s", Raw: "https://pastebin.com/raw/UIFdu235s"},
@@ -188,6 +188,21 @@ func TestRunPastebinSubcommand(t *testing.T) {
 func TestRunPastebinVisibilityFlags(t *testing.T) {
 	setPastebinConfigPaths(t, filepath.Join(t.TempDir(), "missing-user"), filepath.Join(t.TempDir(), "missing-system"))
 	t.Setenv("PASTEBIN_API", "test-key")
+
+	t.Run("default unlisted", func(t *testing.T) {
+		var out, errOut bytes.Buffer
+		old := newUploader
+		defer func() { newUploader = old }()
+		newUploader = func(cfg providerConfig) Uploader {
+			if cfg.PastebinPrivate != pastebinVisibilityUnlisted {
+				t.Fatalf("expected unlisted visibility, got %q", cfg.PastebinPrivate)
+			}
+			return stubUploader{result: UploadResult{Provider: string(ProviderPastebin), URL: "https://pastebin.com/UIFdu235s", Raw: "https://pastebin.com/raw/UIFdu235s"}}
+		}
+		if err := run(context.Background(), []string{"pastebin", writeTempFile(t, "latest.log", "hello\n")}, bytes.NewReader(nil), &out, &errOut); err != nil {
+			t.Fatalf("run returned error: %v", err)
+		}
+	})
 
 	t.Run("public", func(t *testing.T) {
 		var out, errOut bytes.Buffer
@@ -426,7 +441,7 @@ func TestRunPastebinHelpShowsNewFlags(t *testing.T) {
 		t.Fatalf("run returned error: %v", err)
 	}
 	got := out.String()
-	for _, want := range []string{"--pastebin-api", "--pastebin-api-file"} {
+	for _, want := range []string{"--pastebin-api", "--pastebin-api-file", "--unlisted           create an unlisted paste (default)", "--public             create a public paste"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("help missing %q, got: %q", want, got)
 		}
@@ -441,6 +456,27 @@ func TestRunPastebinRejectsConfigFlag(t *testing.T) {
 	err := run(context.Background(), []string{"pastebin", "--config", "custom.env", writeTempFile(t, "latest.log", "hello\n")}, bytes.NewReader(nil), &out, &errOut)
 	if err == nil || !strings.Contains(err.Error(), "flag provided but not defined") {
 		t.Fatalf("expected unknown flag error, got %v", err)
+	}
+}
+
+func TestRunRejectsNonPositiveTimeout(t *testing.T) {
+	path := writeTempFile(t, "latest.log", "hello\n")
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{name: "default zero", args: []string{"--timeout", "0s", path}},
+		{name: "default negative", args: []string{"--timeout", "-1s", path}},
+		{name: "provider zero", args: []string{"mclogs", "--timeout", "0s", path}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			err := run(context.Background(), tt.args, bytes.NewReader(nil), &out, &errOut)
+			if err == nil || !strings.Contains(err.Error(), "--timeout must be greater than 0") {
+				t.Fatalf("expected timeout validation error, got %v", err)
+			}
+		})
 	}
 }
 
@@ -490,6 +526,9 @@ func TestRunMCLLogsTruncatesBeforeUpload(t *testing.T) {
 	}
 	if !strings.HasPrefix(string(gotReq.Content), mcLogsTruncationMarker) {
 		t.Fatalf("expected truncation marker, got %q", string(gotReq.Content[:len(mcLogsTruncationMarker)]))
+	}
+	if !strings.HasPrefix(string(gotReq.Content), mcLogsTruncationMarker+"line 3\n") {
+		t.Fatalf("expected marker on its own line and oldest lines removed, got prefix %q", string(gotReq.Content[:len(mcLogsTruncationMarker)+len("line 3\n")]))
 	}
 	if countLogLines(gotReq.Content) != maxMCLogsLines {
 		t.Fatalf("expected %d lines, got %d", maxMCLogsLines, countLogLines(gotReq.Content))
@@ -621,11 +660,29 @@ func TestPrepareLogContentTruncatesTail(t *testing.T) {
 	if !strings.HasPrefix(string(got), mcLogsTruncationMarker) {
 		t.Fatalf("expected truncation marker, got prefix %q", string(got[:len(mcLogsTruncationMarker)]))
 	}
-	if strings.Contains(string(got), "line 1\n") {
-		t.Fatalf("expected oldest line removed")
+	if !strings.HasPrefix(string(got), mcLogsTruncationMarker+"line 3\n") {
+		t.Fatalf("expected marker on its own line and oldest lines removed, got prefix %q", string(got[:len(mcLogsTruncationMarker)+len("line 3\n")]))
+	}
+	if strings.Contains(string(got), "line 1\n") || strings.Contains(string(got), "line 2\n") {
+		t.Fatalf("expected oldest lines removed")
 	}
 	if !strings.Contains(string(got), fmt.Sprintf("line %d\n", maxMCLogsLines+1)) {
 		t.Fatalf("expected newest line preserved")
+	}
+	if countLogLines(got) != maxMCLogsLines {
+		t.Fatalf("expected %d lines after truncation, got %d", maxMCLogsLines, countLogLines(got))
+	}
+}
+
+func TestPrepareLogContentTruncatesTailWithoutTrailingNewline(t *testing.T) {
+	content := bytes.TrimSuffix(buildLogLines(t, maxMCLogsLines+1), []byte("\n"))
+	got := prepareLogContent(content)
+
+	if !strings.HasPrefix(string(got), mcLogsTruncationMarker+"line 3\n") {
+		t.Fatalf("expected marker on its own line and oldest lines removed, got prefix %q", string(got[:len(mcLogsTruncationMarker)+len("line 3\n")]))
+	}
+	if !strings.HasSuffix(string(got), fmt.Sprintf("line %d", maxMCLogsLines+1)) {
+		t.Fatalf("expected newest line preserved without added newline")
 	}
 	if countLogLines(got) != maxMCLogsLines {
 		t.Fatalf("expected %d lines after truncation, got %d", maxMCLogsLines, countLogLines(got))

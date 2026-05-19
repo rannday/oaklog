@@ -42,7 +42,7 @@ func (c *PastebinClient) Upload(ctx context.Context, req UploadRequest) (UploadR
 	form.Set("api_option", "paste")
 	form.Set("api_paste_code", string(req.Content))
 	form.Set("api_paste_name", req.Source)
-	form.Set("api_paste_private", defaultPastebinValue(c.Private, pastebinVisibilityPublic))
+	form.Set("api_paste_private", defaultPastebinValue(c.Private, pastebinVisibilityUnlisted))
 	form.Set("api_paste_expire_date", defaultPastebinValue(c.ExpireDate, "1W"))
 	form.Set("api_paste_format", defaultPastebinValue(c.Format, "text"))
 

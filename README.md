@@ -4,18 +4,6 @@ Oaklog is a small Go CLI for uploading Minecraft server logs and printing a shar
 
 By default Oaklog prints only the URL so it is easy to pipe into scripts, chat messages, or shell aliases.
 
-## Install
-
-```bash
-go install github.com/rannday/oaklog/cmd/oaklog@latest
-```
-
-## Build
-
-```bash
-go build ./cmd/oaklog
-```
-
 ## Usage
 
 ```bash
@@ -100,7 +88,7 @@ cat latest.log | oaklog pastebin -
 - `-t, --timeout` set HTTP timeout using Go duration syntax
 - `-j, --json` print machine-readable JSON output
 - `--public` create public Pastebin paste
-- `--unlisted` create unlisted Pastebin paste
+- `--unlisted` create unlisted Pastebin paste (default)
 - `-v, --version` print Oaklog version and exit
 - `-h, --help` print help
 
@@ -165,7 +153,7 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\oaklog"
 "PASTEBIN_API=..." | Set-Content "$env:USERPROFILE\.config\oaklog\env"
 ```
 
-Pastebin defaults to public. Use `--unlisted` for unlisted pastes.
+Pastebin defaults to unlisted. Use `--public` for public pastes.
 
 ### Development `.env` fallback
 
@@ -191,7 +179,10 @@ When built with `oaklog_dev`, Oaklog also checks `.env` in current working direc
 Build release archives and checksums:
 
 ```bash
-go tool go-build-bin -v 0.1.0 -c --version-var github.com/rannday/oaklog/internal/oaklog.Version
+go tool go-build-bin \
+  -v 0.1.0 \
+  -c \
+  --version-var github.com/rannday/oaklog/internal/oaklog.Version
 ```
 
 The external build tool creates archives for Windows, Linux, and macOS and writes `checksums.txt`.
@@ -200,16 +191,33 @@ Pass `--version-var github.com/rannday/oaklog/internal/oaklog.Version` so `oaklo
 Upload draft release:
 
 ```bash
-gh release create v0.1.0 tmp/release/* --draft --generate-notes --repo rannday/oaklog
+gh release create v0.1.0 tmp/release/0.1.0/* \
+  --draft \
+  --title "v0.1.0" \
+  --generate-notes \
+  --repo rannday/oaklog
+```
+
+Upload archives to an existing draft release:
+
+```bash
+gh release upload v0.1.0 tmp/release/0.1.0/* --repo rannday/oaklog
 ```
 
 Recommended flow:
 
 ```bash
-cp .env.example .env
 go test ./...
-go tool go-build-bin -v 0.1.0 -c --version-var github.com/rannday/oaklog/internal/oaklog.Version
-gh release create v0.1.0 tmp/release/* --draft --generate-notes --repo rannday/oaklog
+go vet ./...
+go tool go-build-bin \
+  -v 0.1.0 \
+  -c \
+  --version-var github.com/rannday/oaklog/internal/oaklog.Version
+gh release create v0.1.0 tmp/release/0.1.0/* \
+  --draft \
+  --title "Oaklog v0.1.0" \
+  --generate-notes \
+  --repo rannday/oaklog
 ```
 
 Authenticate GitHub CLI before uploading with `gh auth login`. Keep build and upload separate, and upload release archives/checksums rather than raw binaries.

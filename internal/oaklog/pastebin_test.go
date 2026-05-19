@@ -48,7 +48,7 @@ func TestPastebinUploadSuccess(t *testing.T) {
 	if !strings.Contains(gotForm, "api_paste_name=oaklog") {
 		t.Fatalf("expected paste name in form body: %s", gotForm)
 	}
-	if !strings.Contains(gotForm, "api_paste_private=0") || !strings.Contains(gotForm, "api_paste_expire_date=1W") || !strings.Contains(gotForm, "api_paste_format=text") {
+	if !strings.Contains(gotForm, "api_paste_private=1") || !strings.Contains(gotForm, "api_paste_expire_date=1W") || !strings.Contains(gotForm, "api_paste_format=text") {
 		t.Fatalf("expected default paste settings in form body: %s", gotForm)
 	}
 	if result.Provider != string(ProviderPastebin) || result.ID != "UIFdu235s" || result.URL != "https://pastebin.com/UIFdu235s" || result.Raw != "https://pastebin.com/raw/UIFdu235s" {

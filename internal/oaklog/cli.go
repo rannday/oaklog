@@ -18,7 +18,7 @@ const maxLogSize = 10 << 20
 const maxSourceLength = 64
 const maxMCLogsLines = 25_000
 
-const mcLogsTruncationMarker = "[oaklog] log truncated to last 25000 lines due to mclo.gs line limit: "
+const mcLogsTruncationMarker = "[oaklog] log truncated to last 25000 lines due to mclo.gs line limit\n"
 
 var newUploader = func(cfg providerConfig) Uploader {
 	if cfg.Provider == "" {
@@ -179,6 +179,9 @@ func parseDefaultCommand(args []string, stdout io.Writer) (cliOptions, bool, err
 	if err != nil {
 		return cliOptions{}, false, fmt.Errorf("invalid --timeout value %q: %w", timeout, err)
 	}
+	if timeoutDur <= 0 {
+		return cliOptions{}, false, errors.New("--timeout must be greater than 0")
+	}
 
 	source, err = validateSourceLabel(source)
 	if err != nil {
@@ -227,6 +230,9 @@ func parseProviderCommand(provider Provider, args []string, stdout io.Writer) (c
 	if err != nil {
 		return cliOptions{}, false, fmt.Errorf("invalid --timeout value %q: %w", timeout, err)
 	}
+	if timeoutDur <= 0 {
+		return cliOptions{}, false, errors.New("--timeout must be greater than 0")
+	}
 
 	source, err = validateSourceLabel(source)
 	if err != nil {
@@ -239,10 +245,10 @@ func parseProviderCommand(provider Provider, args []string, stdout io.Writer) (c
 			return cliOptions{}, false, errors.New("--public and --unlisted cannot be used together")
 		}
 		switch {
-		case pastebinUnlisted:
-			pastebinPrivate = pastebinVisibilityUnlisted
-		default:
+		case pastebinPublic:
 			pastebinPrivate = pastebinVisibilityPublic
+		default:
+			pastebinPrivate = pastebinVisibilityUnlisted
 		}
 	}
 
@@ -305,8 +311,8 @@ func printPastebinHelp(w io.Writer) {
 	fmt.Fprintln(w, "  -j, --json               print machine-readable JSON output")
 	fmt.Fprintln(w, "      --pastebin-api       Pastebin API token")
 	fmt.Fprintln(w, "      --pastebin-api-file  path to a file containing only the Pastebin API token")
-	fmt.Fprintln(w, "      --public             create a public paste (default)")
-	fmt.Fprintln(w, "      --unlisted           create an unlisted paste")
+	fmt.Fprintln(w, "      --public             create a public paste")
+	fmt.Fprintln(w, "      --unlisted           create an unlisted paste (default)")
 	fmt.Fprintln(w, "  -h, --help               print help")
 }
 
@@ -412,6 +418,9 @@ func readLogFile(path string) ([]byte, error) {
 	if len(content) == 0 {
 		return nil, fmt.Errorf("log file is empty: %s", path)
 	}
+	if len(content) > maxLogSize {
+		return nil, fmt.Errorf("log file is larger than 10 MiB: %s", path)
+	}
 	return content, nil
 }
 
@@ -425,7 +434,7 @@ func prepareLogContent(content []byte) []byte {
 	if countLogLines(content) <= maxMCLogsLines {
 		return content
 	}
-	start := startOfLastLines(content, maxMCLogsLines)
+	start := startOfLastLines(content, maxMCLogsLines-1)
 	out := make([]byte, 0, len(mcLogsTruncationMarker)+len(content[start:]))
 	out = append(out, mcLogsTruncationMarker...)
 	out = append(out, content[start:]...)
